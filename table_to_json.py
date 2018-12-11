@@ -17,25 +17,34 @@ def create_matrix(tag_type):
             if single_td.name == tag_type:
                 while temporary_table[idx, idxtd + column_shift] is not None:
                     column_shift += 1
-                try:
-                    colspan_range = int(single_td["colspan"])
-                except (ValueError, KeyError) as e:
-                    colspan_range = 1
-                try:
-                    rowspan_range = int(single_td["rowspan"])
-                except (ValueError, KeyError) as e:
-                    rowspan_range = 1
+
+                colspan_range = int(single_td.get("colspan", "1"))
+                rowspan_range = int(single_td.get("rowspan", "1"))
 
                 if colspan_range == 1 and rowspan_range == 1:
                     temporary_table[idx, idxtd + column_shift] = single_td.text.strip()
                 else:
                     for j in range(rowspan_range):
                         for i in range(colspan_range):
-                            while temporary_table[idx + j, idxtd + column_shift + i] is not None:
+                            while temporary_table[idx + j, idxtd + column_shift + i]:
                                 column_shift += 1
                             temporary_table[idx + j, idxtd + column_shift + i] = single_td.text.rstrip()
-                    column_shift += (int(colspan_range) - 1)
+                    column_shift += int(colspan_range) - 1
     return temporary_table
+
+
+# search for th in each matrix row to the left from td (is_row) or in each column above td
+def search_th(search_range, pos_td, is_row):
+    temp_name = ''
+    for  s in range(search_range):
+     if is_row:
+         second_pos, first_pos = s, pos_td
+     else:
+         second_pos, first_pos = pos_td, s
+
+     if temporary_table_th[first_pos,  second_pos]:
+        temp_name = temp_name + temporary_table_th[first_pos,  second_pos] + '.'
+    return temp_name
 
 
 with open("vivo_ok.html") as fp:
@@ -64,20 +73,11 @@ print('\nMatrix for <th>: \n', temporary_table_th)
 
 
 temporary_dict = {}
-temporary_name = ''
 #change td matrix to dictionary with key from th rows.columns
 for i in range(len(converted_tr)):
     for j in range(table_width):
-        if temporary_table_td[i, j] is not None:
-            temporary_name = ''
-            for i_th in range(table_width):#search for th in each row to the left from td
-                if temporary_table_th[i, i_th] is not None:
-                     temporary_name = temporary_name + temporary_table_th[i, i_th] + '.'
-            for i_th in range(len(converted_tr)):#search for th in each column above td
-                if temporary_table_th[i_th, j] is not None:
-                    temporary_name = temporary_name + temporary_table_th[i_th, j] + '.'
-            temporary_name = temporary_name[:-1]
-            temporary_dict[temporary_name] = temporary_table_td[i, j]
+        if temporary_table_td[i, j]:
+            temporary_dict[(search_th(j, i, True) + search_th(i, j, False))[:-1]] = temporary_table_td[i, j]
 
 jsonarray = json.dumps(temporary_dict, ensure_ascii=False)
 
