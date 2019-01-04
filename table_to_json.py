@@ -1,3 +1,4 @@
+import argparse
 import json
 import numpy as np
 import sys
@@ -31,6 +32,8 @@ class TableToJSON:
     def find_all_tables(self, soup):
         list_of_tables = soup.find_all('table')
         if len(list_of_tables):
+            if len(list_of_tables) >= self.table_number:
+                self.table_number=len(list_of_tables) - 1
             self.converted_tr = list_of_tables[int(self.table_number)] = soup.find_all('tr')
 
             if len(self.converted_tr):
@@ -144,14 +147,12 @@ class TableToJSON:
 
 if __name__ == "__main__":
     print(TableToJSON.__doc__)
-    if len(sys.argv) == 3:
-        vivo = TableToJSON(sys.argv[1], *sys.argv[2])
-    elif len(sys.argv) == 2:
-        vivo = TableToJSON(sys.argv[1], '0')
-    else:
-        print('Usage: table_to_json [name_of_html_file] - You must add name of file to parse.\n'
-              'Optionaly also add number of table:\ntable_to_json [name_of_html_file] [number_of_table]')
-        sys.exit()
+    parser = argparse.ArgumentParser(description='Change HTML table to json.')
+    parser.add_argument('filename', help="Name of HTML file to parse. Required")
+    parser.add_argument('-t', '--table', help="The number of the table in the HTML file.", type=int, default=0,
+                        required=False)
+    args = parser.parse_args()
+    vivo = TableToJSON(args.filename, args.table)
 
     vivo.show_td_matrix()
     vivo.show_th_matrix()
